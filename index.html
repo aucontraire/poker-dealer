@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="">
+	    <meta name="author" content="">
+		<title>Poker-Dealer</title>
+		
+		<link rel="stylesheet" href="https://jqueryui.com/jquery-wp-content/themes/jqueryui.com/style.css">
+		<link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+		
+		<!-- jQuery -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>	 
+        <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <script>
+	    	$(document).ready(function() {
+                function Card(name, suit) {
+                    this.name = name;
+                    this.suit = suit;        
+                    this.getName = function () {
+                        return this.name + ' of ' + this.suit;
+                    }
+                }
+    
+                function Deck() {
+                    this.suits = ['hearts','diamonds','spades','clubs'];
+                    this.names = {'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10, 'jack': 11, 'queen': 12, 'king': 13, 'ace': 14};
+                    this.cards = [];
+                    this.createDeck = function () {
+                        for (var i = 0; i < this.suits.length; i++) {
+                            for (var j in this.names) {
+                                var card = new Card(j, this.suits[i]);
+                                this.cards.push(card);
+                            }
+                        }          
+                    }
+                    
+                    this.dealHand = function () {
+                        var hand = [];
+                        
+                        if (this.cards.length > 5) {
+                            for (var c = 0; c < 5; c++) {
+                                var cardIndex = Math.floor(Math.random() * this.cards.length);
+                                hand.push(this.cards[cardIndex])
+                                this.cards.splice(cardIndex, 1);
+                            }
+                        } else if (this.cards.length <= 5 && this.cards.length > 0) {
+                            console.log('not enough cards for a full hand');              
+                            for (var d = 0; d < this.cards.length + 1; d++) {
+                                hand.push(this.cards[d]);
+                                this.cards.splice(d, 1);                  
+                            }
+                        } else {
+                            alert('There are no more cards left.')
+                        }
+                        return hand;
+                    }
+
+                    this.addCard = function (card) {
+                        this.cards.push(card);
+                    }
+
+                    this.getCard = function () {
+                        var cardIndex = Math.floor(Math.random() * this.cards.length);
+                        var card = this.cards[cardIndex];
+                        this.cards.splice(cardIndex, 1);
+                        return card;
+                    }
+                }
+    
+                var deck;
+                $('#deck').click(function () { 
+                    var create = confirm("Are you sure you want to create a deck? If a deck exists, it will erase it.");      
+                    if (create) {      
+                        $('li').remove();
+                        deck = new Deck();
+                        deck.createDeck();         
+                        $('#cards-left').html('Cards left in deck: ' + deck.cards.length); //create a function      
+                    }     
+                });
+    
+                // draws hand to ul
+                function drawHand(hand, hide) {
+                    for (var c = 0; c < hand.length; c++) {
+                        var revealId = hand[c].suit + '-' + hand[c].name;
+                        var cardId = 'card-' + c;
+                        if (hide) {
+                            $('#hand').append($('<li>').attr('class', 'cards back').attr('id', cardId));
+                            $('#' + cardId).data({ 'revealId': revealId, 'cardId': cardId });
+                        } else {
+                            $('#hand').append($('<li>').attr('class', 'cards back').attr('id', revealId));
+                            $('#' + revealId).data({ 'revealId': revealId, 'cardId': cardId });
+                        }                               
+                    }
+                }
+    
+                // deals a hand to player
+                var hand;
+                $('#deal').click(function (){
+                    if (deck) {
+                        hand = deck.dealHand();
+                        $('#cards-left').html('Cards left in deck: ' + deck.cards.length); //create a function
+                        drawHand(hand, true);
+                    } else {
+                        alert('There is no deck. Click on the "New deck" button to create one.');
+                    }
+                });
+        
+                // flip card to reveal name and suit
+                $('#hand').on('click', '.cards', function (element){
+                    var card = element.target.id;
+                    var revealId = $('#' + element.target.id).data()['revealId'];
+                    var cardId = $('#' + element.target.id).data()['cardId'];
+                
+                    if(card.startsWith("card")) {
+                        $(this).attr('id', revealId);
+                    } else {
+                        $(this).attr('id', cardId);
+                    }
+                });
+    
+                // return card to deck, draw a new card
+                $('#hand').on('dblclick', '.cards', function (element) {
+                    // remove selected card from hand
+                    var cardId = $('#' + element.target.id).data()['cardId'];         
+                    hand.splice(cardId.split("-")[1], 1);     
+                        
+                    // return card to deck
+                    var revealId = $('#' + element.target.id).data()['revealId'];
+                    var returnedCard = new Card(revealId.split("-")[1], revealId.split("-")[0]);
+                    deck.addCard(returnedCard);
+                    console.log('You returned: ' + returnedCard.getName());
+                    
+                    // draw new card, add to hand, remove old items, and redraw hand
+                    var newCard = deck.getCard();
+                    console.log('You drew: ' + newCard.getName());
+                    hand.push(newCard);
+                    $('li').remove();
+                    drawHand(hand, false);
+                
+                    $('#cards-left').html('Cards left in deck: ' + deck.cards.length); //create a function   
+                });   	    	    	    	    		
+	    	});	
+	    </script>
+	    <style>
+            button {
+                cursor: pointer;
+            }
+
+            /* Cards */
+            #hand {
+                display: inline;	
+            }
+
+            .cards {
+                background-color: #fff;
+                background-repeat: no-repeat;
+                background-size: 100%;
+                border-color: #000;
+                border-width: 1px;
+                border-style: solid;
+                border-radius: 5px;
+                
+                padding: 0px;
+                margin: 0px;
+                height: 85px;
+                width: 60px;
+                float: left;
+                
+                list-style: none;
+                cursor: pointer;
+            }
+
+            .back {
+                background-image: url("https://deck-of-cards.js.org/faces/back.png");
+            }
+
+            /* Spades */
+            #spades-ace {
+                background-image: url("https://deck-of-cards.js.org/faces/0_1.svg");
+            }
+            #spades-two {
+                background-image: url("https://deck-of-cards.js.org/faces/0_2.svg");
+            }
+            #spades-three {
+                background-image: url("https://deck-of-cards.js.org/faces/0_3.svg");
+            }
+            #spades-four {
+                background-image: url("https://deck-of-cards.js.org/faces/0_4.svg");
+            }
+            #spades-five {
+                background-image: url("https://deck-of-cards.js.org/faces/0_5.svg");
+            }
+            #spades-six {
+                background-image: url("https://deck-of-cards.js.org/faces/0_6.svg");
+            }
+            #spades-seven {
+                background-image: url("https://deck-of-cards.js.org/faces/0_7.svg");
+            }
+            #spades-eight {
+                background-image: url("https://deck-of-cards.js.org/faces/0_8.svg");
+            }
+            #spades-nine {
+                background-image: url("https://deck-of-cards.js.org/faces/0_9.svg");
+            }
+            #spades-ten {
+                background-image: url("https://deck-of-cards.js.org/faces/0_10.svg");
+            }
+            #spades-jack {
+                background-image: url("https://deck-of-cards.js.org/faces/0_11.svg");
+            }
+            #spades-queen {
+                background-image: url("https://deck-of-cards.js.org/faces/0_12.svg");
+            }
+            #spades-king {
+                background-image: url("https://deck-of-cards.js.org/faces/0_13.svg");
+            }
+
+            /* Hearts */
+            #hearts-ace {
+                background-image: url("https://deck-of-cards.js.org/faces/1_1.svg");
+            }
+            #hearts-two {
+                background-image: url("https://deck-of-cards.js.org/faces/1_2.svg");
+            }
+            #hearts-three {
+                background-image: url("https://deck-of-cards.js.org/faces/1_3.svg");
+            }
+            #hearts-four {
+                background-image: url("https://deck-of-cards.js.org/faces/1_4.svg");
+            }
+            #hearts-five {
+                background-image: url("https://deck-of-cards.js.org/faces/1_5.svg");
+            }
+            #hearts-six {
+                background-image: url("https://deck-of-cards.js.org/faces/1_6.svg");
+            }
+            #hearts-seven {
+                background-image: url("https://deck-of-cards.js.org/faces/1_7.svg");
+            }
+            #hearts-eight {
+                background-image: url("https://deck-of-cards.js.org/faces/1_8.svg");
+            }
+            #hearts-nine {
+                background-image: url("https://deck-of-cards.js.org/faces/1_9.svg");
+            }
+            #hearts-ten {
+                background-image: url("https://deck-of-cards.js.org/faces/1_10.svg");
+            }
+            #hearts-jack {
+                background-image: url("https://deck-of-cards.js.org/faces/1_11.svg");
+            }
+            #hearts-queen {
+                background-image: url("https://deck-of-cards.js.org/faces/1_12.svg");
+            }
+            #hearts-king {
+                background-image: url("https://deck-of-cards.js.org/faces/1_13.svg");
+            }
+
+            /* Clubs */
+            #clubs-ace {
+                background-image: url("https://deck-of-cards.js.org/faces/2_1.svg");
+            }
+            #clubs-two {
+                background-image: url("https://deck-of-cards.js.org/faces/2_2.svg");
+            }
+            #clubs-three {
+                background-image: url("https://deck-of-cards.js.org/faces/2_3.svg");
+            }
+            #clubs-four {
+                background-image: url("https://deck-of-cards.js.org/faces/2_4.svg");
+            }
+            #clubs-five {
+                background-image: url("https://deck-of-cards.js.org/faces/2_5.svg");
+            }
+            #clubs-six {
+                background-image: url("https://deck-of-cards.js.org/faces/2_6.svg");
+            }
+            #clubs-seven {
+                background-image: url("https://deck-of-cards.js.org/faces/2_7.svg");
+            }
+            #clubs-eight {
+                background-image: url("https://deck-of-cards.js.org/faces/2_8.svg");
+            }
+            #clubs-nine {
+                background-image: url("https://deck-of-cards.js.org/faces/2_9.svg");
+            }
+            #clubs-ten {
+                background-image: url("https://deck-of-cards.js.org/faces/2_10.svg");
+            }
+            #clubs-jack {
+                background-image: url("https://deck-of-cards.js.org/faces/2_11.svg");
+            }
+            #clubs-queen {
+                background-image: url("https://deck-of-cards.js.org/faces/2_12.svg");
+            }
+            #clubs-king {
+                background-image: url("https://deck-of-cards.js.org/faces/2_13.svg");
+            }
+
+            /* Diamonds */
+            #diamonds-ace {
+                background-image: url("https://deck-of-cards.js.org/faces/3_1.svg");
+            }
+            #diamonds-two {
+                background-image: url("https://deck-of-cards.js.org/faces/3_2.svg");
+            }
+            #diamonds-three {
+                background-image: url("https://deck-of-cards.js.org/faces/3_3.svg");
+            }
+            #diamonds-four {
+                background-image: url("https://deck-of-cards.js.org/faces/3_4.svg");
+            }
+            #diamonds-five {
+                background-image: url("https://deck-of-cards.js.org/faces/3_5.svg");
+            }
+            #diamonds-six {
+                background-image: url("https://deck-of-cards.js.org/faces/3_6.svg");
+            }
+            #diamonds-seven {
+                background-image: url("https://deck-of-cards.js.org/faces/3_7.svg");
+            }
+            #diamonds-eight {
+                background-image: url("https://deck-of-cards.js.org/faces/3_8.svg");
+            }
+            #diamonds-nine {
+                background-image: url("https://deck-of-cards.js.org/faces/3_9.svg");
+            }
+            #diamonds-ten {
+                background-image: url("https://deck-of-cards.js.org/faces/3_10.svg");
+            }
+            #diamonds-jack {
+                background-image: url("https://deck-of-cards.js.org/faces/3_11.svg");
+            }
+            #diamonds-queen {
+                background-image: url("https://deck-of-cards.js.org/faces/3_12.svg");
+            }
+            #diamonds-king {
+                background-image: url("https://deck-of-cards.js.org/faces/3_13.svg");
+            }
+	    </style>
+	</head>
+	<body>
+        <h1>Poker Dealer</h1>
+        <button id="deck">New deck</button>
+        <button id="deal">Deal hand</button>
+        <p id="cards-left"></p>
+        <ul id="hand"></ul>
+    </body>
+</html>
